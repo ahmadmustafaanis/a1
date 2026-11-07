@@ -15,6 +15,7 @@ export default function Toolbar() {
   const explode = useStore((s) => s.explode)
   const offsets = useStore((s) => s.offsets)
   const stage = useStore((s) => s.stage)
+  const trained = useStore((s) => !!s.wspReport)
   const systems = useMemo(() => {
     const m = new Map<string, string>()
     for (const o of Object.values(organs)) if (!m.has(o.system)) m.set(o.system, o.color)
@@ -50,10 +51,17 @@ export default function Toolbar() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4" /></svg>
           Reassemble
         </button>
-        <button className="btn btn-accent" disabled={stage !== 'ready'} style={{ opacity: stage === 'ready' ? 1 : 0.5 }} onClick={(e) => startWsp(e.altKey)} title="Opus edits a diagnosis model's weights directly (⌥-click to replay)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="6" r="2" /><circle cx="5" cy="18" r="2" /><circle cx="19" cy="12" r="2" /><path d="M7 6.5l10 5M7 17.5l10-5" /></svg>
-          Train custom model
-        </button>
+        {trained ? (
+          <button className="btn btn-accent" onClick={() => useStore.setState({ wspOpen: true })} title="Reopen the trained model and its comparison">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M5 12l5 5 9-10" /></svg>
+            Opus-edited model
+          </button>
+        ) : (
+          <button className="btn btn-accent" disabled={stage !== 'ready'} style={{ opacity: stage === 'ready' ? 1 : 0.5 }} onClick={(e) => startWsp(e.altKey)} title="Opus edits a diagnosis model's weights directly (⌥-click to replay)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="5" cy="6" r="2" /><circle cx="5" cy="18" r="2" /><circle cx="19" cy="12" r="2" /><path d="M7 6.5l10 5M7 17.5l10-5" /></svg>
+            Train custom model
+          </button>
+        )}
       </div>
     </motion.div>
   )

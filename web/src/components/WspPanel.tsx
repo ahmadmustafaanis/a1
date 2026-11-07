@@ -2,7 +2,9 @@ import { AnimatePresence, animate, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import { cellKey, useStore, type Weights } from '../store'
 import { Feed } from './Timeline'
-import { fetchExplain } from './Xray'
+import { startWsp } from '../api'
+import Compare from './Compare'
+import { openXray } from './Xray'
 
 const FEATURE_SHORT: Record<string, string> = {
   diameter_mm: 'size', log_volume: 'vol', contrast_hu: 'contrast', contrast_snr: 'SNR', sphericity: 'round',
@@ -151,49 +153,68 @@ export default function WspPanel() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
+              {report ? (
+                <div className="scroll" style={{ padding: '22px 24px 16px', borderBottom: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '62%' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="eyebrow" style={{ color: 'var(--ok)' }}>● Opus-edited model is active</div>
+                      <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.03em', marginTop: 4, lineHeight: 1.2 }}>Original vs Opus-edited</div>
+                    </div>
+                    <button className="btn btn-ghost" style={{ height: 30, width: 30, padding: 0, justifyContent: 'center' }} onClick={() => useStore.setState({ wspOpen: false })} aria-label="Close">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                    </button>
+                  </div>
+                  <Compare />
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button className="btn btn-primary" onClick={() => openXray()}>
+                      Model X-ray: why it decides
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    </button>
+                    <button className="btn btn-soft" onClick={() => startWsp(false)} title="Start a fresh session from the original model">Retrain from original</button>
+                  </div>
+                </div>
+              ) : (
               <div style={{ padding: '22px 24px 16px', borderBottom: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <div className="eyebrow">Small-lesion recall (&lt;12 mm)</div>
-                    <div style={{ fontSize: 46, fontWeight: 600, letterSpacing: '-0.045em', lineHeight: 1.05, marginTop: 4 }}>
-                      {m0 && <span className="muted" style={{ fontSize: 26, fontWeight: 500 }}>{Math.round(m0.recall_small * 100)}% → </span>}
-                      {m ? <Num value={m.recall_small * 100} suffix="%" /> : '—'}
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="eyebrow">Small-lesion recall (&lt;12 mm)</div>
+                      <div style={{ fontSize: 46, fontWeight: 600, letterSpacing: '-0.045em', lineHeight: 1.05, marginTop: 4 }}>
+                        {m0 && <span className="muted" style={{ fontSize: 26, fontWeight: 500 }}>{Math.round(m0.recall_small * 100)}% → </span>}
+                        {m ? <Num value={m.recall_small * 100} suffix="%" /> : '—'}
+                      </div>
                     </div>
+                    <button className="btn btn-ghost" style={{ height: 30, width: 30, padding: 0, justifyContent: 'center' }} onClick={() => useStore.setState({ wspOpen: false })} aria-label="Close">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                    </button>
                   </div>
-                  <button className="btn btn-ghost" style={{ height: 30, width: 30, padding: 0, justifyContent: 'center' }} onClick={() => useStore.setState({ wspOpen: false })} aria-label="Close">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                  </button>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  <Mini label="False alarms" v={m ? `${(m.false_positive_rate * 100).toFixed(1)}%` : '—'} />
-                  <Mini label="Accuracy" v={m ? `${(m.accuracy * 100).toFixed(1)}%` : '—'} />
-                  <Mini label="Weights edited" v={`${changed}/${nParams || '—'}`} />
-                </div>
-                {patient.map((p) => (
-                  <div key={p.name} style={{ padding: 12, borderRadius: 14, background: p.after >= 0.5 ? 'rgba(24,160,88,.08)' : 'var(--danger-soft)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 500 }}>
-                      <span>Your scan · liver finding</span>
-                      <span className="mono">{p.before.toFixed(2)} → <b>{p.after.toFixed(2)}</b></span>
-                    </div>
-                    <div style={{ position: 'relative', height: 8, borderRadius: 99, background: 'rgba(17,18,20,.08)', marginTop: 8 }}>
-                      <div style={{ position: 'absolute', left: '50%', top: -3, bottom: -3, width: 1.5, background: 'var(--ink-3)' }} />
-                      <motion.div animate={{ width: `${Math.max(3, p.after * 100)}%` }} transition={{ duration: 0.9 }} style={{ height: '100%', borderRadius: 99, background: p.after >= 0.5 ? 'var(--ok)' : 'var(--danger)' }} />
-                    </div>
-                    <div className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>{p.after >= 0.5 ? 'The edited model now detects the lesion Opus spotted.' : 'Original model misses this lesion (threshold 0.50).'}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                    <Mini label="False alarms" v={m ? `${(m.false_positive_rate * 100).toFixed(1)}%` : '—'} />
+                    <Mini label="Accuracy" v={m ? `${(m.accuracy * 100).toFixed(1)}%` : '—'} />
+                    <Mini label="Weights edited" v={`${changed}/${nParams || '—'}`} />
                   </div>
-                ))}
-              </div>
+                  {patient.map((p) => (
+                    <div key={p.name} style={{ padding: 12, borderRadius: 14, background: p.after >= 0.5 ? 'rgba(24,160,88,.08)' : 'var(--danger-soft)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 500 }}>
+                        <span>Your scan · liver finding</span>
+                        <span className="mono">{p.before.toFixed(2)} → <b>{p.after.toFixed(2)}</b></span>
+                      </div>
+                      <div style={{ position: 'relative', height: 8, borderRadius: 99, background: 'rgba(17,18,20,.08)', marginTop: 8 }}>
+                        <div style={{ position: 'absolute', left: '50%', top: -3, bottom: -3, width: 1.5, background: 'var(--ink-3)' }} />
+                        <motion.div animate={{ width: `${Math.max(3, p.after * 100)}%` }} transition={{ duration: 0.9 }} style={{ height: '100%', borderRadius: 99, background: p.after >= 0.5 ? 'var(--ok)' : 'var(--danger)' }} />
+                      </div>
+                      <div className="muted" style={{ fontSize: 11.5, marginTop: 6 }}>{p.after >= 0.5 ? 'The edited model now detects the lesion Opus spotted.' : 'Original model misses this lesion (threshold 0.50).'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="scroll" style={{ padding: '16px 24px', flex: 1, minHeight: 0 }}>
                 {!events.length && <div className="shimmer">Connecting to Opus…</div>}
                 <Feed events={events} live={live} />
                 {report && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginTop: 14, padding: 16, borderRadius: 16, background: 'var(--ink)', color: '#fff' }}>
-                    <div className="eyebrow" style={{ color: 'rgba(255,255,255,.55)' }}>Held-out test set</div>
-                    <div style={{ fontSize: 15, fontWeight: 500, marginTop: 6, lineHeight: 1.45 }}>
-                      Small-lesion recall {Math.round(report.test_before.recall_small * 100)}% → {Math.round(report.test_after.recall_small * 100)}%, false alarms {(report.test_before.false_positive_rate * 100).toFixed(1)}% → {(report.test_after.false_positive_rate * 100).toFixed(1)}%, by editing {report.weights_changed} weights ({report.pct_changed}% of the model).
-                    </div>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,.7)', marginTop: 8, lineHeight: 1.5 }}>{report.summary}</div>
-                    <button className="btn" style={{ marginTop: 12, background: '#fff', color: 'var(--ink)' }} onClick={() => { useStore.setState({ wspOpen: false, xrayOpen: true }); fetchExplain() }}>
+                    <div className="eyebrow" style={{ color: 'rgba(255,255,255,.55)' }}>Opus’s summary of the edits</div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,.8)', marginTop: 8, lineHeight: 1.55 }}>{report.summary}</div>
+                    <button className="btn" style={{ marginTop: 12, background: '#fff', color: 'var(--ink)' }} onClick={() => openXray()}>
                       See why it decides → Model X-ray
                     </button>
                   </motion.div>

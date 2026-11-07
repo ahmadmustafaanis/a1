@@ -88,3 +88,17 @@ def unit_profiles(b: Bundle, data: dict) -> dict:
                           "mean_act": {g: round(float(h2[m, j].mean()), 2) for g, m in groups.items()},
                           "top_inputs": [f"h1[{i}]:{W2[j, i]:+.2f}" for i in top]})
     return out
+
+
+def weight_diff(base: Bundle, edited: Bundle, tol: float = 1e-6) -> list[dict]:
+    """Ground truth list of parameters that differ between two models (dedupes repeat edits and reverts)."""
+    out = []
+    for ln in ("l1", "l2", "l3"):
+        lb, le = getattr(base.net, ln), getattr(edited.net, ln)
+        Wb, We = _np(lb.weight), _np(le.weight)
+        for r, c in zip(*np.nonzero(np.abs(Wb - We) > tol)):
+            out.append({"layer": ln, "param": "weight", "row": int(r), "col": int(c), "old": round(float(Wb[r, c]), 4), "new": round(float(We[r, c]), 4)})
+        bb, be = _np(lb.bias), _np(le.bias)
+        for r in np.nonzero(np.abs(bb - be) > tol)[0]:
+            out.append({"layer": ln, "param": "bias", "row": int(r), "col": -1, "old": round(float(bb[r]), 4), "new": round(float(be[r]), 4)})
+    return out

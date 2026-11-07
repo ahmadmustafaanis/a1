@@ -12,9 +12,10 @@ export type Decomp = {
   counterfactuals: { feature: string; delta_std: number; delta_raw: number; plausible: boolean }[]
 }
 export type Explain = {
+  kind?: 'finding' | 'closest_call'
   features: string[]
   feature_plain: Record<string, string>
-  cases: { name: string; base: Decomp; edited: Decomp | null }[]
+  cases: { name: string; kind?: string; info?: { candidates_checked: number; score_original: number; diameter_mm: number }; base: Decomp; edited: Decomp | null }[]
   edited_cells: { layer: string; param: string; row: number; col: number; old: number; new: number }[]
   opus: {
     units?: Record<string, { name: string; role: string }>
@@ -32,16 +33,33 @@ const NEG = '#2F5BFF'
 
 export async function fetchExplain(force = false): Promise<Explain | null> {
   const { scanId } = useStore.getState()
-  useStore.setState({ explainLoading: true })
+  useStore.setState({ explainLoading: true, explainError: undefined })
   try {
     const r = await fetch(`/api/scans/${scanId}/explain${force ? '?force=true' : ''}`, { method: 'POST' })
-    if (!r.ok) return null
+    if (!r.ok) {
+      let msg = `Explanation failed (${r.status}).`
+      try {
+        msg = (await r.json()).detail ?? msg
+      } catch { /* not json */ }
+      useStore.setState({ explainError: msg })
+      return null
+    }
     const j = (await r.json()) as Explain
     useStore.setState({ explain: j })
     return j
+  } catch {
+    useStore.setState({ explainError: 'Could not reach the Lumen API.' })
+    return null
   } finally {
     useStore.setState({ explainLoading: false })
   }
+}
+
+/** Open the X-ray, reusing the saved analysis when there is one. */
+export function openXray() {
+  const st = useStore.getState()
+  useStore.setState({ xrayOpen: true, wspOpen: false })
+  if (!st.explain) fetchExplain()
 }
 
 /** Diverging bars: each feature's exact contribution to the decision (ghost = original model). */
@@ -196,6 +214,7 @@ export default function XrayPanel() {
   const open = useStore((s) => s.xrayOpen)
   const ex = useStore((s) => s.explain)
   const loading = useStore((s) => s.explainLoading)
+  const error = useStore((s) => s.explainError)
   const [which, setWhich] = useState<'base' | 'edited'>('edited')
   const c = ex?.cases[0]
   const d = c ? (which === 'edited' && c.edited ? c.edited : c.base) : null
@@ -208,20 +227,33 @@ export default function XrayPanel() {
           <motion.div onClick={(e) => e.stopPropagation()} className="glass" initial={{ y: 40, scale: 0.98 }} animate={{ y: 0, scale: 1 }} exit={{ y: 30, opacity: 0 }} transition={{ type: 'spring', damping: 28, stiffness: 240 }}
             style={{ width: 'min(1180px, 100%)', height: 'min(780px, 100%)', background: 'var(--glass-strong)', display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)', overflow: 'hidden', borderRadius: 28 }}>
             <div className="scroll" style={{ padding: 26, borderRight: '1px solid var(--line)', minWidth: 0 }}>
-              <div className="eyebrow">Model X-ray · lesion_net · your liver finding</div>
-              <h2 style={{ margin: '6px 0 4px', fontSize: 28, letterSpacing: '-0.035em', fontWeight: 600 }}>Why the AI decided.</h2>
+              <div className="eyebrow">Model X-ray · lesion_net · {c?.kind === 'closest_call' ? 'closest call (not reported)' : 'your liver finding'}</div>
+              <h2 style={{ margin: '6px 0 4px', fontSize: 28, letterSpacing: '-0.035em', fontWeight: 600 }}>
+                {c?.kind === 'closest_call' ? 'Why nothing was flagged.' : 'Why the AI decided.'}
+              </h2>
+              {c?.kind === 'closest_call' && c.info && (
+                <div style={{ fontSize: 13, color: 'var(--ink-2)', margin: '4px 0 6px' }}>
+                  No finding was reported. This is the most lesion-like of {c.info.candidates_checked} spots checked in the liver (≈{c.info.diameter_mm} mm).
+                </div>
+              )}
               <div className="muted" style={{ fontSize: 13.5 }}>Every line is real signal flowing through the network for <i>this</i> finding. Thicker means more influence. <span style={{ color: '#c2410c' }}>Coral</span> pushes toward “lesion”, <span style={{ color: NEG }}>blue</span> pushes away. Hover a unit to see what Opus found it does.</div>
               {c?.edited && (
                 <div style={{ display: 'inline-flex', marginTop: 14, padding: 3, borderRadius: 999, background: 'rgba(17,18,20,.06)' }}>
                   {(['base', 'edited'] as const).map((w) => (
-                    <button key={w} onClick={() => setWhich(w)} className="btn" style={{ height: 30, fontSize: 12.5, background: which === w ? '#fff' : 'transparent', boxShadow: which === w ? '0 1px 4px rgba(0,0,0,.08)' : 'none' }}>
-                      {w === 'base' ? `Original model · ${Math.round(c.base.score * 100)}%` : `After Opus's edits · ${Math.round(c.edited!.score * 100)}%`}
+                    <button key={w} onClick={() => setWhich(w)} className="btn" style={{ height: 30, fontSize: 12.5, background: which === w ? (w === 'edited' ? 'var(--accent)' : '#fff') : 'transparent', color: which === w && w === 'edited' ? '#fff' : undefined, boxShadow: which === w ? '0 1px 4px rgba(0,0,0,.08)' : 'none' }}>
+                      {w === 'base' ? `Original model · ${Math.round(c.base.score * 100)}%` : `Opus-edited model · ${Math.round(c.edited!.score * 100)}%`}
                     </button>
                   ))}
                 </div>
               )}
               <div style={{ marginTop: 12 }}>
-                {loading && !ex && <div className="shimmer" style={{ padding: 40 }}>Opus is reading the network’s weights…</div>}
+                {loading && !ex && <div className="shimmer" style={{ padding: 40 }}>Opus is reading the network’s weights… (about 30 s the first time)</div>}
+                {!loading && !ex && error && (
+                  <div style={{ padding: 20, borderRadius: 16, background: 'var(--danger-soft)', color: '#b3261e', fontSize: 13.5, lineHeight: 1.5 }}>
+                    {error}
+                    <div><button className="btn btn-soft" style={{ marginTop: 10, color: 'var(--ink)' }} onClick={() => fetchExplain(true)}>Try again</button></div>
+                  </div>
+                )}
                 {ex && d && <Circuit ex={ex} d={d} showEdits={which === 'edited'} />}
               </div>
               {which === 'edited' && c?.edited && (
@@ -235,7 +267,7 @@ export default function XrayPanel() {
             <div className="scroll" style={{ padding: 26, display: 'flex', flexDirection: 'column', gap: 18, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <div style={{ flex: 1, fontSize: 18, fontWeight: 500, letterSpacing: '-0.02em', lineHeight: 1.4 }}>
-                  {ex?.opus.headline ?? <span className="shimmer">Opus is reading the weights…</span>}
+                  {ex?.opus.headline ?? (loading ? <span className="shimmer">Opus is reading the weights…</span> : error ? <span className="muted">No explanation available.</span> : null)}
                 </div>
                 <button className="btn btn-ghost" style={{ height: 30, width: 30, padding: 0, justifyContent: 'center' }} onClick={() => useStore.setState({ xrayOpen: false })} aria-label="Close">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
@@ -244,7 +276,7 @@ export default function XrayPanel() {
               {ex && (
                 <>
                   <div>
-                    <div className="eyebrow" style={{ marginBottom: 10 }}>What drove the decision {c?.edited ? '(faint = original model)' : ''}</div>
+                    <div className="eyebrow" style={{ marginBottom: 10 }}>What drove the Opus-edited model’s decision {c?.edited ? '(faint = original model)' : ''}</div>
                     <AttributionBars ex={ex} />
                   </div>
                   <Bullets title="Evidence for a lesion" items={ex.opus.evidence_for} color={POS} />

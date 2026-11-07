@@ -212,7 +212,10 @@ class WSPSession:
         return [describe_model, evaluate, get_weights, trace, feature_sensitivity, edit_weights, revert_last, finish]
 
     def final_report(self, summary: str) -> None:
+        from wsp.explain import weight_diff
+
         n = sum(p.numel() for p in self.work.net.parameters())
+        self.changed = {(c["layer"], c["param"], c["row"], c["col"]) for c in weight_diff(self.base, self.work)}
         rep = {"summary": summary, "val_before": self.eval(self.base), "val_after": self.eval(self.work),
                "test_before": self.eval(self.base, "te"), "test_after": self.eval(self.work, "te"),
                "weights_changed": len(self.changed), "n_params": n,

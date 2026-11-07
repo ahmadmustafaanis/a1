@@ -34,11 +34,26 @@ export async function startScan(opts: { file?: File; demo?: string; replay?: boo
   useStore.setState({ scanId })
   await listen(job, (e) => useStore.getState().pushEvent(e))
   if (useStore.getState().stage !== 'ready') useStore.setState({ stage: 'ready' })
+  await loadSaved()
+}
+
+/** Restore this scan's finished training session and Model X-ray analysis, if they exist. */
+export async function loadSaved() {
+  const { scanId } = useStore.getState()
+  if (!scanId) return
+  const [w, x] = await Promise.all([fetch(`/api/scans/${scanId}/wsp`), fetch(`/api/scans/${scanId}/explain`)])
+  if (w.ok) {
+    const evs: Ev[] = await w.json()
+    useStore.setState({ wspEvents: [] })
+    for (const e of evs) useStore.getState().pushWsp(e)
+    useStore.setState({ wspPulse: {} })
+  }
+  if (x.ok) useStore.setState({ explain: await x.json() })
 }
 
 export async function startWsp(replay: boolean) {
   const st = useStore.getState()
-  st.set({ wspOpen: true, wspEvents: [], wspReport: undefined })
+  st.set({ wspOpen: true, wspEvents: [], wspReport: undefined, explain: undefined, lesionFlagged: false })
   const r = await fetch('/api/wsp', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ scanId: st.scanId, replay }),

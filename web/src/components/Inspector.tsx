@@ -2,7 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import { askOrgans } from '../api'
 import { useStore } from '../store'
-import { AttributionBars, fetchExplain } from './Xray'
+import Compare from './Compare'
+import { AttributionBars, fetchExplain, openXray } from './Xray'
 
 const SYSTEM_NAME: Record<string, string> = {
   digestive: 'Digestive', hepatic: 'Liver & gallbladder', urinary: 'Urinary', respiratory: 'Respiratory', cardiac: 'Heart',
@@ -103,6 +104,7 @@ export default function Inspector() {
                       </div>
                     </div>
                   )}
+                  {f && <Compare compact />}
                   {f && (
                     <div style={{ padding: 14, borderRadius: 16, background: 'rgba(255,255,255,.8)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -113,7 +115,7 @@ export default function Inspector() {
                         <>
                           {explain.opus?.headline && <div style={{ fontSize: 13.5, lineHeight: 1.5 }}>{explain.opus.headline}</div>}
                           <AttributionBars ex={explain} max={5} />
-                          <button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} onClick={() => useStore.setState({ xrayOpen: true })}>
+                          <button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} onClick={() => openXray()}>
                             Open Model X-ray
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                           </button>

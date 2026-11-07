@@ -181,6 +181,31 @@ def _edits_log(sdir: Path) -> list[dict]:
     return out
 
 
+def _closest_call(sdir: Path, base):
+    """Recompute liver candidates from the cached CT + segmentation; return the highest-scoring one."""
+    import nibabel as nib
+    import numpy as np
+
+    from wsp.lesion import extract_candidates
+
+    segs = sorted(sdir.glob("seg_*.nii.gz"))
+    if not segs or not (sdir / "ct.nii.gz").exists():
+        return None
+    img = nib.as_closest_canonical(nib.load(str(sdir / "ct.nii.gz")))
+    vol = np.asarray(img.dataobj, np.float32)
+    seg = np.asarray(nib.as_closest_canonical(nib.load(str(segs[0]))).dataobj)
+    liver = seg == 5
+    if liver.sum() < 100:
+        return None
+    feats, cents, _ = extract_candidates(vol, liver, img.header.get_zooms()[:3], exclude=(seg > 0) & ~liver, min_depth_mm=9)
+    if not len(feats):
+        return None
+    p = base.predict(feats)
+    k = int(np.argmax(p))
+    return feats[k], {"candidates_checked": int(len(feats)), "score_original": round(float(p[k]), 3),
+                      "diameter_mm": round(float(feats[k][0]), 1), "center_mm": [round(float(c)) for c in cents[k]]}
+
+
 @app.post("/api/scans/{scan_id}/explain")
 async def explain(scan_id: str, force: bool = False):
     """Weight-level explanation of each finding: exact attributions + circuit flow, unit names and narrative by Opus."""
@@ -188,14 +213,20 @@ async def explain(scan_id: str, force: bool = False):
     import torch
     from claude_agent_sdk import AssistantMessage, ClaudeAgentOptions, TextBlock, query
 
-    from wsp.explain import decompose, unit_profiles
+    from wsp.explain import decompose, unit_profiles, weight_diff
     from wsp.lesion import FEATURES, Bundle, LesionNet, load_bundle, load_data
 
     sdir = CACHE / scan_id
-    feats = sorted(sdir.glob("lesion_*_features.npy"))
-    if not feats:
-        raise HTTPException(404, "no findings")
+    if not sdir.exists():
+        raise HTTPException(404, "unknown scan")
     base = load_bundle()
+    feats = sorted(sdir.glob("lesion_*_features.npy"))
+    closest = None
+    if not feats:
+        # No finding reported: explain the closest call — the most lesion-like spot — and why it was NOT flagged.
+        closest = await asyncio.to_thread(_closest_call, sdir, base)
+        if closest is None:
+            raise HTTPException(404, "No liver lesion candidates in this scan, so there is no model decision to explain.")
     edited = None
     ep = sdir / "lesion_net_edited.pt"
     if ep.exists():
@@ -214,7 +245,11 @@ async def explain(scan_id: str, force: bool = False):
     cases = []
     for f in feats:
         x = np.load(f)
-        cases.append({"name": f.name.replace("_features.npy", ""), "base": decompose(base, x),
+        cases.append({"name": f.name.replace("_features.npy", ""), "kind": "finding", "base": decompose(base, x),
+                      "edited": decompose(edited, x) if edited else None})
+    if closest is not None:
+        x, info = closest
+        cases.append({"name": "closest_call", "kind": "closest_call", "info": info, "base": decompose(base, x),
                       "edited": decompose(edited, x) if edited else None})
     edits = _edits_log(sdir)
     data = load_data()
@@ -225,7 +260,16 @@ async def explain(scan_id: str, force: bool = False):
                 "top_h1": sorted(d["h1"], key=lambda u: -abs(u["contrib"]))[:6],
                 "top_h2": sorted(d["h2"], key=lambda u: -abs(u["contrib"]))[:5], "counterfactuals": d["counterfactuals"]}
 
-    prompt = f"""You are explaining a small neural network's decision about one liver finding to a patient and their doctor.
+    if closest is None:
+        subject = "one liver finding that was reported"
+    elif closest[1]["score_original"] >= 0.5:
+        subject = ("the spot lesion_net scored MOST lesion-like in this liver. Opus (the orchestrating assistant) reviewed the images and "
+                   f"did NOT report it, judging it non-lesional (e.g. vessel, fissure or edge artifact). Details: {json.dumps(closest[1])}. "
+                   "Explain what drove the model's high score, which features argue it is not a lesion, and why a human-style review matters")
+    else:
+        subject = ("the MOST lesion-like spot in this liver, which the model scored below threshold and which was NOT reported "
+                   f"(the scan had no findings). Details: {json.dumps(closest[1])}. Explain why it was not called a lesion; reassure without overclaiming")
+    prompt = f"""You are explaining a small neural network's decision about {subject} to a patient and their doctor.
 The network (lesion_net, 9 features → 16 h1 units → 8 h2 units → lesion probability) is piecewise linear, so the numbers below are EXACT
 contributions to the logit (positive = pushes toward "lesion"), measured relative to an average candidate.
 Feature meanings: {json.dumps(FEATURE_PLAIN)}
@@ -256,7 +300,57 @@ Return ONLY a JSON object (no prose around it) with:
         j = json.loads(text[text.index("{"): text.rindex("}") + 1])
     except Exception:
         j = {"headline": text.strip()[:600], "units": {}}
-    out = {"tag": tag, "features": FEATURES, "feature_plain": FEATURE_PLAIN, "cases": cases, "edits": edits,
-           "edited_cells": [c for e in edits for c in e["cells"]], "opus": j}
+    out = {"tag": tag, "kind": cases[0]["kind"], "features": FEATURES, "feature_plain": FEATURE_PLAIN, "cases": cases, "edits": edits,
+           "edited_cells": weight_diff(base, edited) if edited else [], "opus": j}
     cache.write_text(json.dumps(out, default=float))
     return out
+
+
+@app.get("/api/scans/{scan_id}/wsp")
+def saved_wsp(scan_id: str):
+    """The last completed weight-space session for this scan (all events), so the UI can reopen it without retraining."""
+    p = CACHE / scan_id / "wsp_events.jsonl"
+    if not p.exists():
+        raise HTTPException(404, "no saved session")
+    evs = [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+    if not any(e["type"] == "wsp_done" for e in evs):
+        raise HTTPException(404, "session not finished")
+    diff = _true_diff(CACHE / scan_id)
+    if diff is not None:
+        for e in evs:
+            if e["type"] == "wsp_done":
+                n = e["report"].get("n_params", 305)
+                e["report"]["weights_changed"] = len(diff)
+                e["report"]["pct_changed"] = round(100 * len(diff) / n, 2)
+    return evs
+
+
+def _true_diff(sdir: Path):
+    import torch
+
+    from wsp.explain import weight_diff
+    from wsp.lesion import Bundle, LesionNet, load_bundle
+
+    ep = sdir / "lesion_net_edited.pt"
+    if not ep.exists():
+        return None
+    ck = torch.load(ep, weights_only=False)
+    n = LesionNet()
+    n.load_state_dict(ck["state"])
+    return weight_diff(load_bundle(), Bundle(n, ck["mu"], ck["sd"]))
+
+
+@app.get("/api/scans/{scan_id}/explain")
+def saved_explain(scan_id: str):
+    """Cached Model X-ray analysis (no Opus call)."""
+    p = CACHE / scan_id / "explain.json"
+    if not p.exists():
+        raise HTTPException(404, "no saved analysis")
+    c = json.loads(p.read_text())
+    ep = CACHE / scan_id / "lesion_net_edited.pt"
+    if c.get("tag") != f"{int(ep.stat().st_mtime) if ep.exists() else 0}":
+        raise HTTPException(404, "analysis is out of date")
+    diff = _true_diff(CACHE / scan_id)
+    if diff is not None:
+        c["edited_cells"] = diff
+    return c

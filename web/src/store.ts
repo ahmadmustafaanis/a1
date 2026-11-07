@@ -70,6 +70,7 @@ type State = {
   lesionFlagged: boolean
   explain?: any
   explainLoading: boolean
+  explainError?: string
   xrayOpen: boolean
 
   set: (p: Partial<State>) => void
