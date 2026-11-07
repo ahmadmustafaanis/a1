@@ -6,6 +6,8 @@ import Timeline from './components/Timeline'
 import Toolbar from './components/Toolbar'
 import WspPanel from './components/WspPanel'
 import XrayPanel from './components/Xray'
+import ReportPanel from './components/Report'
+import { openReport } from './api'
 import { useStore } from './store'
 
 function TopBar() {
@@ -28,7 +30,18 @@ function TopBar() {
       )}
       <div style={{ flex: 1 }} />
       {stage !== 'landing' && <div className="muted" style={{ fontSize: 12, pointerEvents: 'auto' }}>Drag organs · Shift-click to multi-select · Double-click to isolate</div>}
+      {stage === 'ready' && <ReportButton />}
     </div>
+  )
+}
+
+function ReportButton() {
+  const has = useStore((s) => !!s.report)
+  return (
+    <button className="btn btn-primary" style={{ pointerEvents: 'auto' }} onClick={() => openReport()} title={has ? 'Open the full report' : 'Generate a full report (creates custom weights first if needed)'}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><path d="M14 3v6h6M8 13h8M8 17h6" /></svg>
+      {has ? 'View report' : 'Generate report'}
+    </button>
   )
 }
 
@@ -66,6 +79,7 @@ export default function App() {
           <XrayPanel />
         </>
       )}
+      <ReportPanel />
     </div>
   )
 }

@@ -12,7 +12,7 @@ const RADII = new Map<number, number>()
 const FINDING_POS = new Map<number, THREE.Vector3>()
 const tmpV2 = new THREE.Vector3()
 
-function useOrganGeometry(url: string) {
+export function useOrganGeometry(url: string) {
   const { scene } = useGLTF(url)
   return useMemo(() => {
     let g: THREE.BufferGeometry | null = null
@@ -266,8 +266,62 @@ function HoverLabel({ o, r }: { o: Organ; r: number }) {
   )
 }
 
+const CONTROLS: { current: CameraControls | null } = { current: null }
+
+export type Shot = { key: string; title: string; caption: string; url: string }
+type View = { key: string; title: string; caption: string; hidden: string[]; selected?: number[]; camera?: [number, number, number, number, number, number] }
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** Report snapshots: drive the real scene through a few views and grab frames from the WebGL canvas. */
+export const capture: { run?: () => Promise<Shot[]> } = {}
+
+function Capturer() {
+  const { gl, scene, camera } = useThree()
+  useEffect(() => {
+    capture.run = async () => {
+      const st = useStore.getState()
+      const saved = { selected: st.selected, isolate: st.isolate, hiddenSystems: st.hiddenSystems, explode: st.explode, spin: st.spin, offsets: st.offsets }
+      const findings = Object.values(st.organs).filter((o) => o.finding)
+      const views: View[] = [
+        { key: 'overview', title: 'Whole scan', caption: 'Every segmented structure in its true position (muscles hidden).', hidden: ['muscular'], camera: [0, 0.6, 8.6, 0, 0.15, 0] },
+        { key: 'organs', title: 'Organs and vessels', caption: 'Bowel, bone and muscle hidden to show the solid organs and major vessels.', hidden: ['muscular', 'digestive', 'skeletal'], camera: [0, 0.8, 7.6, 0, 0.45, 0] },
+        { key: 'side', title: 'Side view', caption: 'Seen from the patient’s right side.', hidden: ['muscular', 'digestive'], camera: [-8.2, 0.8, 1.2, 0, 0.2, 0] },
+        ...findings.map((f) => ({ key: `finding-${f.id}`, title: f.label, caption: 'Close-up of the finding inside the see-through liver.', hidden: ['muscular'], selected: [f.id] })),
+      ]
+      const shots: Shot[] = []
+      for (const v of views) {
+        useStore.setState({ spin: false, isolate: false, explode: 0, offsets: {}, hiddenSystems: v.hidden, selected: v.selected ?? [] })
+        await sleep(120) // let the camera rig react to the selection
+        if (v.camera) await CONTROLS.current?.setLookAt(...v.camera, false)
+        await sleep(1500) // opacity / position easing settles
+        gl.render(scene, camera)
+        const src = gl.domElement
+        const w = 1400
+        const h = Math.round((src.height / src.width) * w)
+        const c = document.createElement('canvas')
+        c.width = w
+        c.height = h
+        const ctx = c.getContext('2d')!
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, w, h)
+        ctx.drawImage(src, 0, 0, w, h)
+        shots.push({ key: v.key, title: v.title, caption: v.caption, url: c.toDataURL('image/jpeg', 0.88) })
+      }
+      useStore.setState(saved)
+      return shots
+    }
+    return () => {
+      capture.run = undefined
+    }
+  }, [gl, scene, camera])
+  return null
+}
+
 function Rig() {
   const ref = useRef<CameraControls>(null!)
+  useEffect(() => {
+    CONTROLS.current = ref.current
+  })
   const selected = useStore((s) => s.selected)
   const isolate = useStore((s) => s.isolate)
   const dragging = useStore((s) => s.dragging)
@@ -365,6 +419,7 @@ export default function Scene() {
       <Organs />
       <ContactShadows position={[0, -2.05, 0]} opacity={0.28} scale={40} blur={3.2} far={6} resolution={1024} color="#3a3020" />
       <Rig />
+      <Capturer />
       <EffectComposer multisampling={0}>
         <N8AO aoRadius={0.35} intensity={1.6} distanceFalloff={0.6} halfRes />
         <SMAA />

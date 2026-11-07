@@ -208,6 +208,10 @@ def _closest_call(sdir: Path, base):
 
 @app.post("/api/scans/{scan_id}/explain")
 async def explain(scan_id: str, force: bool = False):
+    return await build_explain(scan_id, force)
+
+
+async def build_explain(scan_id: str, force: bool = False):
     """Weight-level explanation of each finding: exact attributions + circuit flow, unit names and narrative by Opus."""
     import numpy as np
     import torch
@@ -354,3 +358,130 @@ def saved_explain(scan_id: str):
     if diff is not None:
         c["edited_cells"] = diff
     return c
+
+
+# ----------------------------------------------------------------------------- full report
+REPORT_SYSTEM = ("You write patient-facing imaging reports for an educational 3D CT explainer. You are precise, warm and honest "
+                 "about uncertainty. You never diagnose; you explain, interpret and suggest sensible next steps.")
+
+
+async def _opus_json(prompt: str, system: str) -> dict:
+    from claude_agent_sdk import AssistantMessage, ClaudeAgentOptions, TextBlock, query
+
+    opts = ClaudeAgentOptions(model=os.environ.get("LUMEN_MODEL", "claude-opus-5-5"), tools=[], setting_sources=[], max_turns=1,
+                              system_prompt=system, max_buffer_size=64 * 1024 * 1024)
+    text = ""
+    async for m in query(prompt=prompt, options=opts):
+        if isinstance(m, AssistantMessage):
+            text += "".join(b.text for b in m.content if isinstance(b, TextBlock))
+    try:
+        return json.loads(text[text.index("{"): text.rindex("}") + 1])
+    except Exception:
+        return {"impression": text.strip()[:1500]}
+
+
+async def run_report(scan_id: str, log: EventLog) -> None:
+    from wsp.session import WSPSession
+
+    sdir = CACHE / scan_id
+    try:
+        man = json.loads((sdir / "manifest.json").read_text())
+
+        # 1) custom weights — generate them if this scan doesn't have them yet
+        if not (sdir / "lesion_net_edited.pt").exists():
+            log.emit("report_stage", stage="weights", status="running", text="Opus is creating custom weights for this scan")
+            wlog = EventLog(sdir / "wsp_events.jsonl")
+            task = asyncio.create_task(WSPSession(wlog, sdir).run())
+            async for ev in wlog.stream():
+                log.emit(ev["type"], **{k: v for k, v in ev.items() if k not in ("i", "t", "type")})
+            await task
+            log.emit("report_stage", stage="weights", status="done", text="Custom weights ready")
+        else:
+            log.emit("report_stage", stage="weights", status="skipped", text="Using this scan's existing custom weights")
+
+        wsp = None
+        wp = sdir / "wsp_events.jsonl"
+        if wp.exists():
+            for l in wp.read_text().splitlines():
+                e = json.loads(l)
+                if e["type"] == "wsp_done":
+                    wsp = e["report"]
+            diff = _true_diff(sdir)
+            if wsp and diff is not None:
+                wsp["weights_changed"] = len(diff)
+                wsp["pct_changed"] = round(100 * len(diff) / wsp.get("n_params", 305), 2)
+
+        # 2) model X-ray for the finding (or the closest call)
+        log.emit("report_stage", stage="explain", status="running", text="Tracing why the model decided")
+        ex = None
+        try:
+            ex = await build_explain(scan_id)
+            log.emit("explain_ready", explain=ex)
+        except HTTPException as he:
+            log.emit("report_stage", stage="explain", status="skipped", text=str(he.detail))
+        log.emit("report_stage", stage="explain", status="done", text="Model reasoning traced")
+
+        # 3) Opus writes the report
+        log.emit("report_stage", stage="write", status="running", text="Opus is writing your report")
+        organs = [{"name": o["name"], "label": o["label"], "system": o["system"], "volume_ml": o["volume_ml"], "note": o.get("blurb", "")}
+                  for o in man["organs"] if not o.get("finding")]
+        brief_ex = None
+        if ex:
+            c = ex["cases"][0]
+            brief_ex = {"kind": ex.get("kind"), "info": c.get("info"), "score_original": c["base"]["score"],
+                        "score_edited": c["edited"]["score"] if c.get("edited") else None,
+                        "top_features_edited": sorted((c["edited"] or c["base"])["features"], key=lambda f: -abs(f["contrib"]))[:5],
+                        "opus_xray": ex.get("opus")}
+        prompt = f"""Write a complete report for this person's CT, based ONLY on the data below.
+
+Scan: {man.get('title')} · {len(organs)} structures segmented. Demo note: {man.get('demoNote') or 'none'}
+Opus's scan summary: {man.get('summary')}
+Structures (volume, existing plain-language note): {json.dumps(organs, default=float)[:9000]}
+Findings: {json.dumps(man.get('findings', []), default=float)[:3000]}
+Custom diagnosis model (Opus edited lesion_net's weights directly, no retraining), held-out results: {json.dumps(wsp, default=float)[:2500] if wsp else 'not available'}
+Model X-ray of the {'finding' if ex and ex.get('kind') == 'finding' else 'closest call'}: {json.dumps(brief_ex, default=float)[:4000] if brief_ex else 'not available'}
+
+Return ONLY a JSON object with:
+  "impression": 3-5 plain sentences — the overall picture,
+  "key_points": 3-5 short bullets,
+  "organs": [{{"name": exact structure name, "status": "typical" | "attention" | "incomplete", "note": one sentence interpretation using its volume}}] — cover the 10-16 most relevant structures (main organs, vessels; group repetitive bones/muscles into one entry each with name "skeleton" / "muscles"),
+  "findings": [{{"name": finding name, "interpretation": 2-3 sentences, "possibilities": 2-4 short items (e.g. "simple cyst", "hemangioma"), "certainty": one short phrase}}],
+  "ai_reasoning": 2-3 sentences explaining in plain words what the custom model weighed and how Opus's weight edits changed it, including any trade-off,
+  "suggestions": [{{"title": short, "detail": one or two sentences, "urgency": "routine" | "soon" | "discuss"}}] — 3-5 sensible next steps,
+  "questions_for_doctor": 3-5 questions,
+  "limitations": 3-4 short honest bullets (resolution, demo data, model scope, not a diagnosis)."""
+        rep = await _opus_json(prompt, REPORT_SYSTEM)
+        import time as _t
+
+        out = {"scanId": scan_id, "created": int(_t.time()), "title": man.get("title"), "demoNote": man.get("demoNote"),
+               "summary": man.get("summary"), "nOrgans": len(organs), "findings": man.get("findings", []),
+               "organs": {o["name"]: {"label": o["label"], "volume_ml": o["volume_ml"], "system": o["system"]} for o in organs},
+               "wsp": wsp, "opus": rep}
+        (sdir / "report.json").write_text(json.dumps(out, default=float))
+        log.emit("report_stage", stage="write", status="done", text="Report ready")
+        log.emit("report_ready", report=out)
+    except Exception as exc:  # surface to the UI
+        import traceback
+
+        log.emit("error", text=f"{type(exc).__name__}: {exc}", trace=traceback.format_exc()[-1500:])
+    finally:
+        log.finish()
+
+
+@app.post("/api/scans/{scan_id}/report")
+async def start_report(scan_id: str):
+    if not (CACHE / scan_id / "manifest.json").exists():
+        raise HTTPException(404, "scan not ready")
+    job = uuid.uuid4().hex[:8]
+    log = EventLog(CACHE / scan_id / "report_events.jsonl")
+    JOBS[job] = log
+    asyncio.create_task(run_report(scan_id, log))
+    return {"job": job}
+
+
+@app.get("/api/scans/{scan_id}/report")
+def saved_report(scan_id: str):
+    p = CACHE / scan_id / "report.json"
+    if not p.exists():
+        raise HTTPException(404, "no report yet")
+    return json.loads(p.read_text())

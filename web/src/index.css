@@ -83,3 +83,14 @@ input[type='range']::-webkit-slider-thumb {
   background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
   animation: shimmer 2.2s linear infinite;
 }
+
+@media print {
+  @page { margin: 12mm; }
+  html, body, #root { height: auto !important; overflow: visible !important; background: #fff !important; }
+  #root > div > *:not(.report-overlay) { display: none !important; }
+  .report-overlay { position: static !important; background: none !important; backdrop-filter: none !important; }
+  .report-scroll { overflow: visible !important; padding: 0 !important; }
+  .report-doc { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; max-width: none !important; }
+  .no-print { display: none !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

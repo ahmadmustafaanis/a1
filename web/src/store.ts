@@ -72,6 +72,11 @@ type State = {
   explainLoading: boolean
   explainError?: string
   xrayOpen: boolean
+  reportOpen: boolean
+  reportBusy: boolean
+  report?: any
+  reportEvents: Ev[]
+  reportShots?: { key: string; title: string; caption: string; url: string }[]
 
   set: (p: Partial<State>) => void
   pushEvent: (e: Ev) => void
@@ -113,6 +118,9 @@ export const useStore = create<State>((set, get) => ({
   lesionFlagged: false,
   explainLoading: false,
   xrayOpen: false,
+  reportOpen: false,
+  reportBusy: false,
+  reportEvents: [],
 
   set: (p) => set(p),
   pushEvent: (e) => {

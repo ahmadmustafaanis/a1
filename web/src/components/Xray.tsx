@@ -103,7 +103,7 @@ export function AttributionBars({ ex, max = 9 }: { ex: Explain; max?: number }) 
   )
 }
 
-function Circuit({ ex, d, showEdits }: { ex: Explain; d: Decomp; showEdits: boolean }) {
+export function Circuit({ ex, d, showEdits }: { ex: Explain; d: Decomp; showEdits: boolean }) {
   const [hover, setHover] = useState<string | null>(null)
   const W = 660
   const H = 520

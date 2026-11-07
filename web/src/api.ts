@@ -1,3 +1,4 @@
+import { capture } from './components/Scene'
 import { useStore, type Ev } from './store'
 
 function listen(job: string, onEvent: (e: Ev) => void): Promise<void> {
@@ -19,7 +20,7 @@ export async function startScan(opts: { file?: File; demo?: string; replay?: boo
   const st = useStore.getState()
   st.set({
     stage: 'building', events: [], organs: {}, findings: [], selected: [], offsets: {}, explode: 0, isolate: false, hiddenSystems: ['muscular'],
-    summary: undefined, title: opts.file?.name ?? 'Abdomen & pelvis CT', lesionFlagged: false, wspReport: undefined, explain: undefined, xrayOpen: false,
+    summary: undefined, title: opts.file?.name ?? 'Abdomen & pelvis CT', lesionFlagged: false, wspReport: undefined, explain: undefined, xrayOpen: false, report: undefined, reportShots: undefined, reportOpen: false,
   })
   const fd = new FormData()
   if (opts.file) fd.append('file', opts.file)
@@ -49,6 +50,41 @@ export async function loadSaved() {
     useStore.setState({ wspPulse: {} })
   }
   if (x.ok) useStore.setState({ explain: await x.json() })
+  const r = await fetch(`/api/scans/${scanId}/report`)
+  if (r.ok) useStore.setState({ report: await r.json() })
+}
+
+/** Full report: (custom weights if missing) → model X-ray → Opus writes it; meanwhile we photograph the 3D scene. */
+export async function startReport() {
+  const st = useStore.getState()
+  useStore.setState({ reportOpen: true, reportBusy: true, reportEvents: [], report: undefined, reportShots: undefined, wspOpen: false, xrayOpen: false })
+  const shotsP = capture.run ? capture.run() : Promise.resolve([])
+  const r = await fetch(`/api/scans/${st.scanId}/report`, { method: 'POST' })
+  if (!r.ok) {
+    useStore.setState({ reportBusy: false, reportEvents: [{ i: 0, t: 0, type: 'error', text: `Could not start the report (${r.status}).` }] })
+    return
+  }
+  const { job } = await r.json()
+  await listen(job, (e) => {
+    const s = useStore.getState()
+    useStore.setState({ reportEvents: [...s.reportEvents, e] })
+    if (e.type.startsWith('wsp_')) s.pushWsp(e)
+    if (e.type === 'explain_ready') useStore.setState({ explain: e.explain })
+    if (e.type === 'report_ready') useStore.setState({ report: e.report })
+  })
+  useStore.setState({ reportShots: await shotsP, reportBusy: false })
+}
+
+/** Open the saved report (re-photographing the scene if needed), or generate one. */
+export async function openReport() {
+  const st = useStore.getState()
+  if (!st.report) return startReport()
+  useStore.setState({ reportOpen: true })
+  if (!st.reportShots && capture.run) {
+    useStore.setState({ reportBusy: true })
+    const shots = await capture.run()
+    useStore.setState({ reportShots: shots, reportBusy: false })
+  }
 }
 
 export async function startWsp(replay: boolean) {
