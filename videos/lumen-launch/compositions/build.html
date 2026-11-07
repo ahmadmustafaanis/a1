@@ -1,0 +1,64 @@
+<template>
+<style>
+
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-500-normal.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+
+  #root { position: absolute; inset: 0; overflow: hidden; }
+
+  .t { position: absolute; font-family: 'Geist'; font-weight: 600; color: #111214; letter-spacing: -0.035em; line-height: 1.02; margin: 0; }
+  .t em { font-style: normal; color: #2F5BFF; }
+  .t .w { display: inline-block; margin-right: 0.24em; }
+  .q { position: absolute; font-family: 'Geist'; font-weight: 500; color: #4A4C52; letter-spacing: -0.01em; margin: 0; }
+
+
+  #build-ground { position: absolute; inset: 0; background: #F4F3EF; }
+  #build-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  #build-v { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+  .t.f { font-size: 64px; }
+  #build-t1 { left: 360px; top: 150px; width: 1200px; font-size: 60px; text-align: left; }
+  #build-t2 { left: 360px; top: 150px; width: 1200px; font-size: 60px; text-align: left; }
+
+
+</style>
+<div id="root" data-composition-id="build" data-width="1920" data-height="1080" data-duration="10.0">
+
+  <div id="build-ground" class="clip" data-start="0" data-duration="10.0"></div>
+  <div id="build-cam">
+    <video id="build-v" class="clip" src="assets/footage/build.mp4" data-start="0" data-duration="10.0" muted playsinline></video>
+  </div>
+  <h1 id="build-t1" class="t clip" data-start="2.3" data-duration="3.6"><span class="w">Opus</span><span class="w">5.5</span><span class="w">builds</span><span class="w">it,</span><span class="w"><em>live</em></span></h1>
+  <h1 id="build-t2" class="t clip" data-start="6.3" data-duration="3.5"><span class="w">Every</span><span class="w">organ,</span><span class="w">its</span><span class="w">own</span><span class="w"><em>object</em></span></h1>
+
+
+</div>
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  function words(sel) {
+    // titles are pre-split into <span class="w"> at build time (idempotent: re-running this script never rewrites the DOM)
+    return document.querySelectorAll(sel + ' .w');
+  }
+  function titleIn(tl, sel, at) {
+    const ws = words(sel);
+    tl.fromTo(ws, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.16, ease: 'power4.out', stagger: 0.08 }, at);
+  }
+  function titleOut(tl, sel, at) {
+    tl.to(sel + ' .w', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in', stagger: 0.03 }, at);
+  }
+
+
+  tl.fromTo('#build-cam', { scale: 1.06, filter: 'blur(8px)', opacity: 0 }, { scale: 1, filter: 'blur(0px)', opacity: 1, duration: 0.45, ease: 'power3.out' }, 0);
+  tl.to('#build-cam', { scale: 1.0, x: 0, y: 0, duration: 0.6, ease: 'power2.inOut' }, 2.0);
+  titleIn(tl, '#build-t1', 2.3);
+  titleOut(tl, '#build-t1', 5.62);
+  titleIn(tl, '#build-t2', 6.3);
+  titleOut(tl, '#build-t2', 9.52);
+
+
+  window.__timelines["build"] = tl;
+</script>
+</template>

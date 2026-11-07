@@ -276,8 +276,15 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 export const capture: { run?: () => Promise<Shot[]> } = {}
 
 function Capturer() {
-  const { gl, scene, camera } = useThree()
+  const { gl, scene, camera, size } = useThree()
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      // dev-only: screen position of a scene point (used to record demo footage)
+      ;(window as any).__lumenProject = (p: [number, number, number]) => {
+        const v = new THREE.Vector3(...p).project(camera)
+        return [((v.x + 1) / 2) * size.width, ((1 - v.y) / 2) * size.height]
+      }
+    }
     capture.run = async () => {
       const st = useStore.getState()
       const saved = { selected: st.selected, isolate: st.isolate, hiddenSystems: st.hiddenSystems, explode: st.explode, spin: st.spin, offsets: st.offsets }
@@ -313,7 +320,7 @@ function Capturer() {
     return () => {
       capture.run = undefined
     }
-  }, [gl, scene, camera])
+  }, [gl, scene, camera, size])
   return null
 }
 

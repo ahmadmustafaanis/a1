@@ -1,0 +1,61 @@
+<template>
+<style>
+
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-500-normal.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+
+  #root { position: absolute; inset: 0; overflow: hidden; }
+
+  .t { position: absolute; font-family: 'Geist'; font-weight: 600; color: #111214; letter-spacing: -0.035em; line-height: 1.02; margin: 0; }
+  .t em { font-style: normal; color: #2F5BFF; }
+  .t .w { display: inline-block; margin-right: 0.24em; }
+  .q { position: absolute; font-family: 'Geist'; font-weight: 500; color: #4A4C52; letter-spacing: -0.01em; margin: 0; }
+
+
+  #xray-ground { position: absolute; inset: 0; background: #F4F3EF; }
+  #xray-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  #xray-v { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+  .t.f { font-size: 64px; }
+  #xray-t1 { left: 160px; top: 948px; width: 1600px; font-size: 56px; text-align: center; }
+
+
+</style>
+<div id="root" data-composition-id="xray" data-width="1920" data-height="1080" data-duration="7.6">
+
+  <div id="xray-ground" class="clip" data-start="0" data-duration="7.6"></div>
+  <div id="xray-cam">
+    <video id="xray-v" class="clip" src="assets/footage/xray.mp4" data-start="0" data-duration="7.6" muted playsinline></video>
+  </div>
+  <h1 id="xray-t1" class="t clip" data-start="0.35" data-duration="6.9"><span class="w">…and</span><span class="w">shows</span><span class="w">exactly</span><span class="w"><em>why</em></span></h1>
+
+
+</div>
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  function words(sel) {
+    // titles are pre-split into <span class="w"> at build time (idempotent: re-running this script never rewrites the DOM)
+    return document.querySelectorAll(sel + ' .w');
+  }
+  function titleIn(tl, sel, at) {
+    const ws = words(sel);
+    tl.fromTo(ws, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.16, ease: 'power4.out', stagger: 0.08 }, at);
+  }
+  function titleOut(tl, sel, at) {
+    tl.to(sel + ' .w', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in', stagger: 0.03 }, at);
+  }
+
+
+  tl.fromTo('#xray-cam', { scale: 1.035, filter: 'blur(6px)' }, { scale: 1, filter: 'blur(0px)', duration: 0.35, ease: 'power3.out' }, 0);
+  tl.to('#xray-cam', { scale: 1.22, x: 250, y: 40, duration: 0.6, ease: 'power3.inOut' }, 3.6);
+  tl.to('#xray-cam', { scale: 1.0, x: 0, y: 0, duration: 0.5, ease: 'power3.inOut' }, 6.6);
+  titleIn(tl, '#xray-t1', 0.35);
+  titleOut(tl, '#xray-t1', 6.97);
+
+
+  window.__timelines["xray"] = tl;
+</script>
+</template>

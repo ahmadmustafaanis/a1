@@ -57,7 +57,7 @@ export async function loadSaved() {
 /** Full report: (custom weights if missing) → model X-ray → Opus writes it; meanwhile we photograph the 3D scene. */
 export async function startReport() {
   const st = useStore.getState()
-  useStore.setState({ reportOpen: true, reportBusy: true, reportEvents: [], report: undefined, reportShots: undefined, wspOpen: false, xrayOpen: false })
+  useStore.setState({ savedId: undefined, reportOpen: true, reportBusy: true, reportEvents: [], report: undefined, reportShots: undefined, wspOpen: false, xrayOpen: false })
   const shotsP = capture.run ? capture.run() : Promise.resolve([])
   const r = await fetch(`/api/scans/${st.scanId}/report`, { method: 'POST' })
   if (!r.ok) {

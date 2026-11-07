@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #F4F3EF; }
+      #base { position: absolute; inset: 0; background: #F4F3EF; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="78.0" data-width="1920" data-height="1080" data-motion-blur="on">
+    <div id="base" class="clip" data-start="0" data-duration="78.0" data-track-index="0"></div>
+    <div id="ct" data-composition-id="ct" data-composition-src="compositions/ct.html" data-start="0" data-duration="10" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <div id="reveal" data-composition-id="reveal" data-composition-src="compositions/reveal.html" data-start="10" data-duration="4" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <div id="build" data-composition-id="build" data-composition-src="compositions/build.html" data-start="14" data-duration="10.0" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <div id="explore" data-composition-id="explore" data-composition-src="compositions/explore.html" data-start="24" data-duration="9.767" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <div id="finding" data-composition-id="finding" data-composition-src="compositions/finding.html" data-start="33.767" data-duration="7.833" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <div id="wsp" data-composition-id="wsp" data-composition-src="compositions/wsp.html" data-start="41.6" data-duration="14.167" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <div id="xray" data-composition-id="xray" data-composition-src="compositions/xray.html" data-start="55.767" data-duration="7.6" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <div id="report" data-composition-id="report" data-composition-src="compositions/report.html" data-start="63.367" data-duration="8.9" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <div id="endcard" data-composition-id="endcard" data-composition-src="compositions/endcard.html" data-start="72.267" data-duration="5.733" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+    <audio id="music" class="clip" src="assets/audio/music.wav" data-start="0" data-duration="78.0" data-media-start="4.0" data-volume="0.85" data-fade-in="0.6" data-fade-out="2.4"></audio>
+    <audio id="sfx-flood" class="clip" src="assets/audio/whoosh-a.mp3" data-start="9.77" data-volume="0.9"></audio>
+    <audio id="sfx-click" class="clip" src="assets/audio/click.mp3" data-start="14.703" data-volume="1.0"></audio>
+    <audio id="sfx-whip" class="clip" src="assets/audio/whoosh-b.mp3" data-start="41.209" data-volume="0.85"></audio>
+    <audio id="sfx-payoff" class="clip" src="assets/audio/riser.mp3" data-start="49.762" data-volume="0.9"></audio>
+    <audio id="sfx-end" class="clip" src="assets/audio/whoosh-a.mp3" data-start="71.82" data-volume="0.7"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

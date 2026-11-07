@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion'
 import { useRef, useState } from 'react'
 import { startScan } from '../api'
+import { requireAuth } from '../auth'
+import { useStore } from '../store'
 
 const ease = [0.2, 0.8, 0.2, 1] as const
 
@@ -21,6 +23,16 @@ const FEATURES = [
     icon: <><circle cx="5" cy="6" r="2" /><circle cx="5" cy="18" r="2" /><circle cx="19" cy="12" r="2" /><path d="M7 6.5l10 5M7 17.5l10-5" /></>,
   },
 ]
+
+function LibraryLink() {
+  const user = useStore((s) => s.user)
+  return (
+    <button className="btn btn-ghost" style={{ height: 42, padding: '0 14px', borderRadius: 13 }} onClick={() => requireAuth(() => useStore.setState({ libraryOpen: true }))}>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h6v16H4zM14 4h6v16h-6z" /></svg>
+      {user ? 'My reports' : 'Sign in to see reports'}
+    </button>
+  )
+}
 
 export default function Landing() {
   const [over, setOver] = useState(false)
@@ -80,6 +92,7 @@ export default function Landing() {
             <button className="btn btn-soft" style={{ height: 42, padding: '0 16px', borderRadius: 13 }} onClick={() => startScan({ demo: 'abdomen', replay: true })} data-tip="Replays a recorded Opus run in ~20 s">
               Instant replay
             </button>
+            <LibraryLink />
           </div>
         </motion.div>
 

@@ -1,0 +1,91 @@
+<template>
+<style>
+
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-500-normal.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+
+  #root { position: absolute; inset: 0; overflow: hidden; }
+
+  .t { position: absolute; font-family: 'Geist'; font-weight: 600; color: #111214; letter-spacing: -0.035em; line-height: 1.02; margin: 0; }
+  .t em { font-style: normal; color: #2F5BFF; }
+  .t .w { display: inline-block; margin-right: 0.24em; }
+  .q { position: absolute; font-family: 'Geist'; font-weight: 500; color: #4A4C52; letter-spacing: -0.01em; margin: 0; }
+
+
+  #ct-ground { position: absolute; inset: 0; background: #050505; }
+  #ct-stage { position: absolute; left: 860px; top: 0; width: 1080px; height: 1080px; }
+  .ct { position: absolute; left: 860px; top: 0; width: 1080px; height: 1080px; }
+  #ct-t1, #ct-t2, #ct-t3 { left: 110px; top: 410px; width: 660px; font-size: 96px; color: #F4F3EF; }
+  #ct-t3 { top: 360px; }
+  #ct-q { left: 124px; top: 610px; width: 640px; font-size: 38px; color: #8D8F95; }
+  #ct-disc { position: absolute; left: 960px; top: 540px; width: 1080px; height: 1080px; margin: -540px 0 0 -540px; border-radius: 50%; background: #2F5BFF; opacity: 0; }
+
+</style>
+<div id="root" data-composition-id="ct" data-width="1920" data-height="1080" data-duration="10">
+
+  <div id="ct-ground" class="clip" data-start="0" data-duration="10"></div>
+  <div id="ct-mover">
+  <img id="ct-s00" class="clip ct" src="assets/ct/s00.jpg" data-start="0.0" data-duration="0.07" alt="">
+  <img id="ct-s01" class="clip ct" src="assets/ct/s01.jpg" data-start="0.07" data-duration="0.07" alt="">
+  <img id="ct-s02" class="clip ct" src="assets/ct/s02.jpg" data-start="0.14" data-duration="0.072" alt="">
+  <img id="ct-s03" class="clip ct" src="assets/ct/s03.jpg" data-start="0.212" data-duration="0.074" alt="">
+  <img id="ct-s04" class="clip ct" src="assets/ct/s04.jpg" data-start="0.286" data-duration="0.077" alt="">
+  <img id="ct-s05" class="clip ct" src="assets/ct/s05.jpg" data-start="0.363" data-duration="0.082" alt="">
+  <img id="ct-s06" class="clip ct" src="assets/ct/s06.jpg" data-start="0.445" data-duration="0.088" alt="">
+  <img id="ct-s07" class="clip ct" src="assets/ct/s07.jpg" data-start="0.533" data-duration="0.094" alt="">
+  <img id="ct-s08" class="clip ct" src="assets/ct/s08.jpg" data-start="0.627" data-duration="0.104" alt="">
+  <img id="ct-s09" class="clip ct" src="assets/ct/s09.jpg" data-start="0.731" data-duration="0.113" alt="">
+  <img id="ct-s10" class="clip ct" src="assets/ct/s10.jpg" data-start="0.844" data-duration="0.124" alt="">
+  <img id="ct-s11" class="clip ct" src="assets/ct/s11.jpg" data-start="0.968" data-duration="0.137" alt="">
+  <img id="ct-s12" class="clip ct" src="assets/ct/s12.jpg" data-start="1.105" data-duration="0.152" alt="">
+  <img id="ct-s13" class="clip ct" src="assets/ct/s13.jpg" data-start="1.257" data-duration="0.167" alt="">
+  <img id="ct-s14" class="clip ct" src="assets/ct/s14.jpg" data-start="1.424" data-duration="0.184" alt="">
+  <img id="ct-s15" class="clip ct" src="assets/ct/s15.jpg" data-start="1.608" data-duration="0.202" alt="">
+  <img id="ct-s16" class="clip ct" src="assets/ct/s16.jpg" data-start="1.81" data-duration="0.223" alt="">
+  <img id="ct-s17" class="clip ct" src="assets/ct/s17.jpg" data-start="2.033" data-duration="0.245" alt="">
+  <img id="ct-s18" class="clip ct" src="assets/ct/s18.jpg" data-start="2.278" data-duration="0.268" alt="">
+  <img id="ct-s19" class="clip ct" src="assets/ct/s19.jpg" data-start="2.546" data-duration="0.294" alt="">
+  <img id="ct-s20" class="clip ct" src="assets/ct/s20.jpg" data-start="2.84" data-duration="7.16" alt="">
+  </div>
+  <h1 id="ct-t1" class="t clip" data-start="0.25" data-duration="2.55"><span class="w">This</span><span class="w">is</span><span class="w">a</span><span class="w">CT</span><span class="w">scan</span></h1>
+  <h1 id="ct-t2" class="t clip" data-start="2.9" data-duration="3.0"><span class="w">Can</span><span class="w">you</span><span class="w">read</span><span class="w">it?</span></h1>
+  <h1 id="ct-t3" class="t clip" data-start="6.1" data-duration="3.1"><span class="w">Most</span><span class="w">people</span><span class="w"><em>can't</em></span></h1>
+  <p id="ct-q" class="q clip" data-start="6.7" data-duration="2.5">Grey slices. Medical words.</p>
+  <div id="ct-disc" class="clip" data-start="9.2" data-duration="0.8"></div>
+
+</div>
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  function words(sel) {
+    // titles are pre-split into <span class="w"> at build time (idempotent: re-running this script never rewrites the DOM)
+    return document.querySelectorAll(sel + ' .w');
+  }
+  function titleIn(tl, sel, at) {
+    const ws = words(sel);
+    tl.fromTo(ws, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.16, ease: 'power4.out', stagger: 0.08 }, at);
+  }
+  function titleOut(tl, sel, at) {
+    tl.to(sel + ' .w', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in', stagger: 0.03 }, at);
+  }
+
+
+  titleIn(tl, '#ct-t1', 0.25);
+  titleOut(tl, '#ct-t1', 2.55);
+  titleIn(tl, '#ct-t2', 2.9);
+  titleOut(tl, '#ct-t2', 5.65);
+  titleIn(tl, '#ct-t3', 6.1);
+  tl.fromTo('#ct-q', { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.3, ease: 'power3.out' }, 6.75);
+  titleOut(tl, '#ct-t3', 8.95);
+  tl.to('#ct-q', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in' }, 8.95);
+  // the last slice slides to centre and collapses into the lumen disc (carried into the next world)
+  tl.fromTo('#ct-mover', { x: 0, scale: 1 }, { x: -440, duration: 0.55, ease: 'power2.inOut' }, 8.75);
+  tl.to('#ct-mover', { scale: 0.12, duration: 0.55, ease: 'power3.in', transformOrigin: '1400px 540px' }, 9.3);
+  tl.fromTo('#ct-disc', { scale: 0.6, opacity: 0 }, { scale: 0.12, opacity: 1, duration: 0.5, ease: 'power3.in' }, 9.35);
+
+  window.__timelines["ct"] = tl;
+</script>
+</template>

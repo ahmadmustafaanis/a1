@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { startReport } from '../api'
 import OrganViewer from './OrganViewer'
 import { ListenButton } from '../speak'
+import { requireAuth, saveReport } from '../auth'
 import { useStore, type Organ } from '../store'
 import Compare from './Compare'
 import { Feed } from './Timeline'
@@ -305,6 +306,8 @@ export default function ReportPanel() {
   const busy = useStore((s) => s.reportBusy)
   const events = useStore((s) => s.reportEvents)
   const err = events.find((e) => e.type === 'error')
+  const savedId = useStore((s) => s.savedId)
+  const saving = useStore((s) => s.saving)
   const ready = !!rep && !busy
   return (
     <AnimatePresence>
@@ -315,7 +318,15 @@ export default function ReportPanel() {
             <div style={{ fontWeight: 600, letterSpacing: '-0.02em', flex: 1 }}>Report</div>
             {ready && (
               <>
-                <button className="btn btn-soft" onClick={() => startReport()} title="Write a fresh report (keeps the existing custom weights)">Regenerate</button>
+                <button className="btn btn-soft" onClick={() => { useStore.setState({ savedId: undefined }); startReport() }} data-tip="Write a fresh report (keeps the custom weights)" data-tip-pos="bottom">Regenerate</button>
+                <button className="btn btn-soft" disabled={saving || !!savedId} onClick={() => requireAuth(() => saveReport())} style={{ color: savedId ? 'var(--ok)' : undefined }}>
+                  {savedId ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M5 12l5 5 9-10" /></svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12v18l-6-4-6 4z" /></svg>
+                  )}
+                  {saving ? 'Saving…' : savedId ? 'Saved' : 'Save'}
+                </button>
                 <button className="btn btn-primary" onClick={() => window.print()}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z" /></svg>
                   Print / Save PDF

@@ -1,0 +1,81 @@
+<template>
+<style>
+
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-500-normal.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+
+  #root { position: absolute; inset: 0; overflow: hidden; }
+
+  .t { position: absolute; font-family: 'Geist'; font-weight: 600; color: #111214; letter-spacing: -0.035em; line-height: 1.02; margin: 0; }
+  .t em { font-style: normal; color: #2F5BFF; }
+  .t .w { display: inline-block; margin-right: 0.24em; }
+  .q { position: absolute; font-family: 'Geist'; font-weight: 500; color: #4A4C52; letter-spacing: -0.01em; margin: 0; }
+
+
+  #wsp-ground { position: absolute; inset: 0; background: #F4F3EF; }
+  #wsp-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  #wsp-v { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+  .t.f { font-size: 64px; }
+  #wsp-t1 { left: 160px; top: 52px; width: 1600px; font-size: 56px; text-align: center; }
+  #wsp-t2 { left: 160px; top: 52px; width: 1600px; font-size: 56px; text-align: center; }
+
+  #wsp-card { position: absolute; left: 1210px; top: 330px; width: 640px; }
+  #wsp-num { font-family: 'Geist'; font-weight: 600; font-size: 132px; letter-spacing: -0.05em; color: #111214; line-height: 1; }
+  #wsp-num em { font-style: normal; color: #2F5BFF; }
+  #wsp-lab { font-family: 'Geist'; font-weight: 500; font-size: 36px; color: #4A4C52; margin-top: 18px; letter-spacing: -0.01em; line-height: 1.25; }
+  #wsp-pt { font-family: 'Geist'; font-weight: 500; font-size: 30px; color: #4A4C52; margin-top: 34px; display: flex; gap: 14px; align-items: center; }
+  #wsp-pt b { color: #18A058; font-weight: 600; }
+
+
+</style>
+<div id="root" data-composition-id="wsp" data-width="1920" data-height="1080" data-duration="14.167">
+
+  <div id="wsp-ground" class="clip" data-start="0" data-duration="14.167"></div>
+  <div id="wsp-cam">
+    <video id="wsp-v" class="clip" src="assets/footage/wsp.mp4" data-start="0" data-duration="14.167" muted playsinline></video>
+  </div>
+  <h1 id="wsp-t1" class="t clip" data-start="0.4" data-duration="4.6"><span class="w">So</span><span class="w">Opus</span><span class="w">rewrites</span><span class="w">the</span><span class="w">model's</span><span class="w"><em>weights</em></span></h1>
+  <h1 id="wsp-t2" class="t clip" data-start="5.4" data-duration="4.6"><span class="w">No</span><span class="w">retraining.</span><span class="w">7</span><span class="w">of</span><span class="w">305</span><span class="w">weights.</span></h1>
+
+  <div id="wsp-card" class="clip" data-start="10.6" data-duration="3.567">
+    <div id="wsp-num">72% → <em>90%</em></div>
+    <div id="wsp-lab">small lesions caught,<br>on cases it never saw</div>
+    <div id="wsp-pt">This patient's spot: 29% → <b>64%</b></div>
+  </div>
+
+
+</div>
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  function words(sel) {
+    // titles are pre-split into <span class="w"> at build time (idempotent: re-running this script never rewrites the DOM)
+    return document.querySelectorAll(sel + ' .w');
+  }
+  function titleIn(tl, sel, at) {
+    const ws = words(sel);
+    tl.fromTo(ws, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.16, ease: 'power4.out', stagger: 0.08 }, at);
+  }
+  function titleOut(tl, sel, at) {
+    tl.to(sel + ' .w', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in', stagger: 0.03 }, at);
+  }
+
+
+  tl.fromTo('#wsp-cam', { x: 260, filter: 'blur(18px)' }, { x: 0, filter: 'blur(0px)', duration: 0.3, ease: 'power3.out' }, 0);
+  tl.to('#wsp-cam', { scale: 0.6, x: -390, y: 30, duration: 0.65, ease: 'power3.inOut' }, 10.3);
+  titleIn(tl, '#wsp-t1', 0.4);
+  titleOut(tl, '#wsp-t1', 4.72);
+  titleIn(tl, '#wsp-t2', 5.4);
+  titleOut(tl, '#wsp-t2', 9.72);
+
+  tl.fromTo('#wsp-num', { opacity: 0, x: 60, filter: 'blur(10px)' }, { opacity: 1, x: 0, filter: 'blur(0px)', duration: 0.5, ease: 'expo.out' }, 10.75);
+  tl.fromTo('#wsp-lab', { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.3, ease: 'power3.out' }, 11.05);
+  tl.fromTo('#wsp-pt', { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.3, ease: 'power3.out' }, 11.6);
+
+
+  window.__timelines["wsp"] = tl;
+</script>
+</template>

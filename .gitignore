@@ -8,3 +8,11 @@ cache/
 dist/
 .DS_Store
 *.tsbuildinfo
+accounts/
+videos/**/node_modules/
+videos/lumen-launch/.media/
+videos/lumen-launch/.hyperframes/
+videos/lumen-launch/footage/
+videos/**/.thumbnails/
+videos/**/.waveform-cache/
+test_scans/liver_large_tumor*

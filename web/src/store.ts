@@ -57,6 +57,13 @@ type State = {
   hiddenIds: number[]
   paletteOpen: boolean
   sideTab: 'structures' | 'process'
+  user?: { username: string; name: string }
+  token?: string
+  authOpen: false | 'login' | 'register'
+  afterAuth?: () => void
+  libraryOpen: boolean
+  savedId?: string
+  saving: boolean
   toasts: { id: number; text: string; sub?: string; kind?: 'ok' | 'info' | 'warn' }[]
   toast: (text: string, sub?: string, kind?: 'ok' | 'info' | 'warn') => void
   toggleOrgan: (id: number) => void
@@ -118,6 +125,9 @@ export const useStore = create<State>((set, get) => ({
   paletteOpen: false,
   sideTab: 'process',
   toasts: [],
+  authOpen: false,
+  libraryOpen: false,
+  saving: false,
   dragging: false,
   assembleTick: 0,
   wspOpen: false,

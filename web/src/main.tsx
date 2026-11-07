@@ -12,3 +12,10 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Dev-only automation hook (used to record demo footage); stripped from production builds.
+if (import.meta.env.DEV) {
+  Promise.all([import('./store'), import('./api'), import('./components/Xray')]).then(([s, a, x]) => {
+    ;(window as any).__lumen = { useStore: s.useStore, startScan: a.startScan, startWsp: a.startWsp, openReport: a.openReport, openXray: x.openXray }
+  })
+}

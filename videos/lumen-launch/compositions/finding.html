@@ -1,0 +1,64 @@
+<template>
+<style>
+
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-500-normal.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+
+  #root { position: absolute; inset: 0; overflow: hidden; }
+
+  .t { position: absolute; font-family: 'Geist'; font-weight: 600; color: #111214; letter-spacing: -0.035em; line-height: 1.02; margin: 0; }
+  .t em { font-style: normal; color: #2F5BFF; }
+  .t .w { display: inline-block; margin-right: 0.24em; }
+  .q { position: absolute; font-family: 'Geist'; font-weight: 500; color: #4A4C52; letter-spacing: -0.01em; margin: 0; }
+
+
+  #finding-ground { position: absolute; inset: 0; background: #F4F3EF; }
+  #finding-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  #finding-v { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+  .t.f { font-size: 64px; }
+  #finding-t1 { left: 360px; top: 460px; width: 1200px; font-size: 60px; }
+  #finding-t2 { left: 360px; top: 150px; width: 1100px; font-size: 60px; }
+
+
+</style>
+<div id="root" data-composition-id="finding" data-width="1920" data-height="1080" data-duration="7.833">
+
+  <div id="finding-ground" class="clip" data-start="0" data-duration="7.833"></div>
+  <div id="finding-cam">
+    <video id="finding-v" class="clip" src="assets/footage/finding.mp4" data-start="0" data-duration="7.833" muted playsinline></video>
+  </div>
+  <h1 id="finding-t1" class="t clip" data-start="0.3" data-duration="2.4"><span class="w">Opus</span><span class="w">flags</span><span class="w">an</span><span class="w">8</span><span class="w">mm</span><span class="w">spot</span></h1>
+  <h1 id="finding-t2" class="t clip" data-start="4.3" data-duration="3.3"><span class="w">The</span><span class="w">model</span><span class="w">scored</span><span class="w">it</span><span class="w"><em>29%</em></span></h1>
+
+
+</div>
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  function words(sel) {
+    // titles are pre-split into <span class="w"> at build time (idempotent: re-running this script never rewrites the DOM)
+    return document.querySelectorAll(sel + ' .w');
+  }
+  function titleIn(tl, sel, at) {
+    const ws = words(sel);
+    tl.fromTo(ws, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.16, ease: 'power4.out', stagger: 0.08 }, at);
+  }
+  function titleOut(tl, sel, at) {
+    tl.to(sel + ' .w', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in', stagger: 0.03 }, at);
+  }
+
+
+  tl.fromTo('#finding-cam', { scale: 1.035, filter: 'blur(6px)' }, { scale: 1, filter: 'blur(0px)', duration: 0.35, ease: 'power3.out' }, 0);
+  tl.to('#finding-cam', { scale: 1.38, x: 360, y: -20, duration: 0.6, ease: 'power3.inOut' }, 4.6);
+  titleIn(tl, '#finding-t1', 0.3);
+  titleOut(tl, '#finding-t1', 2.42);
+  titleIn(tl, '#finding-t2', 4.3);
+  titleOut(tl, '#finding-t2', 7.32);
+
+
+  window.__timelines["finding"] = tl;
+</script>
+</template>

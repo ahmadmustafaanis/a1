@@ -29,6 +29,10 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 CACHE.mkdir(exist_ok=True)
 app.mount("/files", StaticFiles(directory=str(CACHE)), name="files")
 
+from accounts import router as accounts_router  # noqa: E402
+
+app.include_router(accounts_router)
+
 JOBS: dict[str, EventLog] = {}
 SCANS: dict[str, Scan] = {}
 

@@ -1,0 +1,65 @@
+<template>
+<style>
+
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-500-normal.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+
+  #root { position: absolute; inset: 0; overflow: hidden; }
+
+  .t { position: absolute; font-family: 'Geist'; font-weight: 600; color: #111214; letter-spacing: -0.035em; line-height: 1.02; margin: 0; }
+  .t em { font-style: normal; color: #2F5BFF; }
+  .t .w { display: inline-block; margin-right: 0.24em; }
+  .q { position: absolute; font-family: 'Geist'; font-weight: 500; color: #4A4C52; letter-spacing: -0.01em; margin: 0; }
+
+
+  #explore-ground { position: absolute; inset: 0; background: #F4F3EF; }
+  #explore-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  #explore-v { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+  .t.f { font-size: 64px; }
+  #explore-t1 { left: 360px; top: 150px; width: 1200px; font-size: 60px; text-align: left; }
+  #explore-t2 { left: 360px; top: 150px; width: 1200px; font-size: 60px; text-align: left; }
+
+
+</style>
+<div id="root" data-composition-id="explore" data-width="1920" data-height="1080" data-duration="9.767">
+
+  <div id="explore-ground" class="clip" data-start="0" data-duration="9.767"></div>
+  <div id="explore-cam">
+    <video id="explore-v" class="clip" src="assets/footage/explore.mp4" data-start="0" data-duration="9.767" muted playsinline></video>
+  </div>
+  <h1 id="explore-t1" class="t clip" data-start="1.6" data-duration="4.2"><span class="w">Pull</span><span class="w">it</span><span class="w"><em>apart</em></span></h1>
+  <h1 id="explore-t2" class="t clip" data-start="7.95" data-duration="1.75"><span class="w">Put</span><span class="w">it</span><span class="w">back</span></h1>
+
+
+</div>
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  function words(sel) {
+    // titles are pre-split into <span class="w"> at build time (idempotent: re-running this script never rewrites the DOM)
+    return document.querySelectorAll(sel + ' .w');
+  }
+  function titleIn(tl, sel, at) {
+    const ws = words(sel);
+    tl.fromTo(ws, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.16, ease: 'power4.out', stagger: 0.08 }, at);
+  }
+  function titleOut(tl, sel, at) {
+    tl.to(sel + ' .w', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in', stagger: 0.03 }, at);
+  }
+
+
+  tl.fromTo('#explore-cam', { scale: 1.035, filter: 'blur(6px)' }, { scale: 1, filter: 'blur(0px)', duration: 0.35, ease: 'power3.out' }, 0);
+  tl.to('#explore-cam', { scale: 1.32, x: -260, y: 70, duration: 0.6, ease: 'power3.inOut' }, 2.6);
+  tl.to('#explore-cam', { scale: 1.0, x: 0, y: 0, duration: 0.6, ease: 'power3.inOut' }, 5.2);
+  titleIn(tl, '#explore-t1', 1.6);
+  titleOut(tl, '#explore-t1', 5.52);
+  titleIn(tl, '#explore-t2', 7.95);
+  titleOut(tl, '#explore-t2', 9.42);
+
+
+  window.__timelines["explore"] = tl;
+</script>
+</template>

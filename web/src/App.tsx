@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect } from 'react'
 import { openReport } from './api'
+import { restoreSession } from './auth'
+import { AuthModal, Library, UserMenu } from './components/Account'
 import Inspector from './components/Inspector'
 import Landing from './components/Landing'
 import Palette from './components/Palette'
@@ -41,6 +43,7 @@ function TopBar() {
       )}
       <div style={{ flex: 1 }} />
       {stage === 'ready' && <ReportButton />}
+      <UserMenu />
     </div>
   )
 }
@@ -89,6 +92,8 @@ function useShortcuts() {
       }
       if (e.key === 'Escape') {
         if (s.paletteOpen) return useStore.setState({ paletteOpen: false })
+        if (s.authOpen) return useStore.setState({ authOpen: false, afterAuth: undefined })
+        if (s.libraryOpen) return useStore.setState({ libraryOpen: false })
         if (typing) return (e.target as HTMLElement).blur()
         if (s.reportOpen) return useStore.setState({ reportOpen: false })
         if (s.xrayOpen) return useStore.setState({ xrayOpen: false })
@@ -97,7 +102,7 @@ function useShortcuts() {
         if (s.selected.length) return s.clearSelection()
         return
       }
-      if (typing || e.metaKey || e.ctrlKey || e.altKey || s.stage === 'landing' || s.paletteOpen || s.reportOpen || s.xrayOpen || s.wspOpen) return
+      if (typing || e.metaKey || e.ctrlKey || e.altKey || s.stage === 'landing' || s.paletteOpen || s.authOpen || s.libraryOpen || s.reportOpen || s.xrayOpen || s.wspOpen) return
       const k = e.key.toLowerCase()
       if (k === '/') {
         e.preventDefault()
@@ -115,6 +120,9 @@ function useShortcuts() {
 export default function App() {
   const stage = useStore((s) => s.stage)
   useShortcuts()
+  useEffect(() => {
+    restoreSession()
+  }, [])
   return (
     <div style={{ position: 'relative', height: '100%', width: '100%' }}>
       {stage !== 'landing' && <Scene />}
@@ -132,7 +140,9 @@ export default function App() {
         </>
       )}
       <ReportPanel />
+      <Library />
       <Palette />
+      <AuthModal />
       <Toasts />
     </div>
   )

@@ -1,0 +1,68 @@
+<template>
+<style>
+
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-500-normal.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; }
+
+  #root { position: absolute; inset: 0; overflow: hidden; }
+
+  .t { position: absolute; font-family: 'Geist'; font-weight: 600; color: #111214; letter-spacing: -0.035em; line-height: 1.02; margin: 0; }
+  .t em { font-style: normal; color: #2F5BFF; }
+  .t .w { display: inline-block; margin-right: 0.24em; }
+  .q { position: absolute; font-family: 'Geist'; font-weight: 500; color: #4A4C52; letter-spacing: -0.01em; margin: 0; }
+
+
+  #report-ground { position: absolute; inset: 0; background: #F4F3EF; }
+  #report-cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+  #report-v { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+  .t.f { font-size: 64px; }
+  #report-t1 { left: 70px; top: 330px; width: 420px; font-size: 76px; }
+  #report-t2 { left: 70px; top: 430px; width: 420px; font-size: 76px; }
+  #report-t3 { left: 70px; top: 530px; width: 420px; font-size: 76px; }
+
+
+</style>
+<div id="root" data-composition-id="report" data-width="1920" data-height="1080" data-duration="8.9">
+
+  <div id="report-ground" class="clip" data-start="0" data-duration="8.9"></div>
+  <div id="report-cam">
+    <video id="report-v" class="clip" src="assets/footage/report.mp4" data-start="0" data-duration="8.9" muted playsinline></video>
+  </div>
+  <h1 id="report-t1" class="t clip" data-start="0.4" data-duration="8.3"><span class="w">Read</span><span class="w">it</span></h1>
+  <h1 id="report-t2" class="t clip" data-start="1.5" data-duration="7.2"><span class="w">Hear</span><span class="w">it</span></h1>
+  <h1 id="report-t3" class="t clip" data-start="2.6" data-duration="6.1"><span class="w"><em>Keep</em></span><span class="w">it</span></h1>
+
+
+</div>
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  function words(sel) {
+    // titles are pre-split into <span class="w"> at build time (idempotent: re-running this script never rewrites the DOM)
+    return document.querySelectorAll(sel + ' .w');
+  }
+  function titleIn(tl, sel, at) {
+    const ws = words(sel);
+    tl.fromTo(ws, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.16, ease: 'power4.out', stagger: 0.08 }, at);
+  }
+  function titleOut(tl, sel, at) {
+    tl.to(sel + ' .w', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in', stagger: 0.03 }, at);
+  }
+
+
+  tl.fromTo('#report-cam', { scale: 1.035, filter: 'blur(6px)' }, { scale: 1, filter: 'blur(0px)', duration: 0.35, ease: 'power3.out' }, 0);
+
+  titleIn(tl, '#report-t1', 0.4);
+  titleOut(tl, '#report-t1', 8.42);
+  titleIn(tl, '#report-t2', 1.5);
+  titleOut(tl, '#report-t2', 8.42);
+  titleIn(tl, '#report-t3', 2.6);
+  titleOut(tl, '#report-t3', 8.42);
+
+
+  window.__timelines["report"] = tl;
+</script>
+</template>
