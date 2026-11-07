@@ -13,7 +13,10 @@
   --danger-soft: rgba(255, 59, 48, 0.1);
   --ok: #18a058;
   --radius: 20px;
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 12px 40px -12px rgba(17, 18, 20, 0.18), 0 2px 6px -2px rgba(17, 18, 20, 0.06);
+  --shadow: 0 0 0 0.5px rgba(17, 18, 20, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 1px 2px rgba(17, 18, 20, 0.04), 0 8px 24px -8px rgba(17, 18, 20, 0.12), 0 24px 60px -24px rgba(17, 18, 20, 0.16);
+  --shadow-sm: 0 0 0 0.5px rgba(17, 18, 20, 0.08), 0 1px 2px rgba(17, 18, 20, 0.06);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ring: 0 0 0 2px #fff, 0 0 0 4px rgba(47, 91, 255, 0.55);
   --sans: 'Geist Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono: 'Geist Mono', ui-monospace, monospace;
   color-scheme: light;
@@ -94,3 +97,54 @@ input[type='range']::-webkit-slider-thumb {
   .no-print { display: none !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- polish layer ---------- */
+body::after { /* fine film grain so large flat areas feel printed, not plastic */
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 100; opacity: .035; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.mono, .num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: none; box-shadow: var(--ring) !important; border-radius: 10px; }
+.btn { transition: transform .15s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease), color .2s, opacity .2s; }
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:disabled { cursor: default; }
+.btn-soft { box-shadow: var(--shadow-sm); border-color: transparent !important; }
+.chip { transition: background .2s var(--ease), color .2s, box-shadow .2s; }
+
+.ibtn {
+  width: 36px; height: 36px; border-radius: 12px; display: inline-grid; place-items: center; color: var(--ink-2);
+  transition: background .18s var(--ease), color .18s, transform .15s var(--ease);
+}
+.ibtn:hover:not(:disabled) { background: rgba(17,18,20,.06); color: var(--ink); }
+.ibtn:active:not(:disabled) { transform: scale(.94); }
+.ibtn:disabled { opacity: .35; cursor: default; }
+.ibtn.on { background: var(--ink); color: #fff; }
+
+.kbd {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px;
+  font: 500 10.5px/1 var(--mono); color: var(--ink-3); background: rgba(255,255,255,.9);
+  box-shadow: 0 0 0 0.5px rgba(17,18,20,.14), 0 1px 0 rgba(17,18,20,.12);
+}
+
+/* CSS tooltips: <button data-tip="Reassemble" data-kbd="R"> */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translate(-50%, 4px);
+  white-space: nowrap; padding: 6px 9px; border-radius: 8px; background: rgba(17,18,20,.92); color: #fff;
+  font: 500 12px/1 var(--sans); letter-spacing: 0; pointer-events: none; opacity: 0; transition: opacity .15s, transform .15s var(--ease); z-index: 50;
+}
+[data-tip][data-kbd]::after { content: attr(data-tip) "   " attr(data-kbd); white-space: pre; }
+[data-tip]:hover::after { opacity: 1; transform: translate(-50%, 0); transition-delay: .35s; }
+[data-tip-pos="bottom"]::after { bottom: auto; top: calc(100% + 10px); }
+
+.seg { display: inline-flex; padding: 3px; border-radius: 12px; background: rgba(17,18,20,.05); gap: 2px; }
+.seg > button { height: 28px; padding: 0 12px; border-radius: 9px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); transition: all .2s var(--ease); }
+.seg > button.on { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); }
+
+.row-hover { transition: background .15s var(--ease); border-radius: 10px; }
+.row-hover:hover { background: rgba(17,18,20,.045); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+input:focus-visible, textarea:focus-visible { box-shadow: none !important; }

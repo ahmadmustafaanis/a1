@@ -69,7 +69,7 @@ function OrganMesh({ o, isoIndex, isoCount }: { o: Organ; isoIndex: number; isoC
     if (!g) return
     const selected = s.selected.includes(o.id)
     const anySel = s.selected.length > 0
-    const hidden = s.hiddenSystems.includes(o.system) && !selected
+    const hidden = (s.hiddenSystems.includes(o.system) || s.hiddenIds.includes(o.id)) && !selected
     const off = s.offsets[o.id] ?? [0, 0, 0]
     // target position
     if (s.isolate && selected) {
@@ -173,7 +173,7 @@ function OrganMesh({ o, isoIndex, isoCount }: { o: Organ; isoIndex: number; isoC
           if (defer(e)) return
           e.stopPropagation()
           const s = useStore.getState()
-          if (s.hiddenSystems.includes(o.system) || (s.selected.length && !s.selected.includes(o.id))) return
+          if (s.hiddenSystems.includes(o.system) || s.hiddenIds.includes(o.id) || (s.selected.length && !s.selected.includes(o.id))) return
           useStore.setState({ hovered: o.id })
           document.body.style.cursor = 'grab'
         }}

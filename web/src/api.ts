@@ -73,6 +73,7 @@ export async function startReport() {
     if (e.type === 'report_ready') useStore.setState({ report: e.report })
   })
   useStore.setState({ reportShots: await shotsP, reportBusy: false })
+  if (useStore.getState().report) useStore.getState().toast('Report ready', 'Print it or save it as a PDF')
 }
 
 /** Open the saved report (re-photographing the scene if needed), or generate one. */

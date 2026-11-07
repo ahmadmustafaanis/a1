@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import { startReport } from '../api'
 import OrganViewer from './OrganViewer'
+import { ListenButton } from '../speak'
 import { useStore, type Organ } from '../store'
 import Compare from './Compare'
 import { Feed } from './Timeline'
@@ -142,6 +143,7 @@ function Doc() {
       {shot('overview') && <Figure shot={shot('overview')!} big />}
 
       <Section n={1} title="Impression">
+        <div style={{ marginTop: -6, marginBottom: 10 }}><ListenButton id="report-impression" text={[o.impression, ...(o.key_points ?? [])].join(' ')} label="Listen to summary" /></div>
         <p style={{ fontSize: 17, lineHeight: 1.6, margin: 0, letterSpacing: '-0.01em' }}>{o.impression}</p>
         {o.key_points?.length > 0 && (
           <ul style={{ margin: '14px 0 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.5 }}>

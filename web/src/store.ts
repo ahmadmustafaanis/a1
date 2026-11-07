@@ -54,6 +54,12 @@ type State = {
   explode: number
   offsets: Record<number, [number, number, number]>
   hiddenSystems: string[]
+  hiddenIds: number[]
+  paletteOpen: boolean
+  sideTab: 'structures' | 'process'
+  toasts: { id: number; text: string; sub?: string; kind?: 'ok' | 'info' | 'warn' }[]
+  toast: (text: string, sub?: string, kind?: 'ok' | 'info' | 'warn') => void
+  toggleOrgan: (id: number) => void
   dragging: boolean
   assembleTick: number
 
@@ -108,6 +114,10 @@ export const useStore = create<State>((set, get) => ({
   explode: 0,
   offsets: {},
   hiddenSystems: ['muscular'],
+  hiddenIds: [],
+  paletteOpen: false,
+  sideTab: 'process',
+  toasts: [],
   dragging: false,
   assembleTick: 0,
   wspOpen: false,
@@ -123,6 +133,15 @@ export const useStore = create<State>((set, get) => ({
   reportEvents: [],
 
   set: (p) => set(p),
+  toast: (text, sub, kind = 'ok') => {
+    const id = Date.now() + Math.random()
+    set({ toasts: [...get().toasts, { id, text, sub, kind }] })
+    setTimeout(() => set({ toasts: get().toasts.filter((t) => t.id !== id) }), 4200)
+  },
+  toggleOrgan: (id) => {
+    const h = get().hiddenIds
+    set({ hiddenIds: h.includes(id) ? h.filter((x) => x !== id) : [...h, id] })
+  },
   pushEvent: (e) => {
     const s = get()
     const patch: Partial<State> = { events: [...s.events, e] }
@@ -142,7 +161,9 @@ export const useStore = create<State>((set, get) => ({
         title: m.title || s.title,
         demoNote: m.demoNote,
         stage: 'ready',
+        sideTab: 'structures',
       })
+      if (s.stage === 'building') setTimeout(() => get().toast(`${m.organs.length} structures ready`, m.findings?.length ? `${m.findings.length} finding flagged by Opus` : 'No findings flagged'), 300)
     }
     set(patch)
   },
@@ -170,6 +191,10 @@ export const useStore = create<State>((set, get) => ({
     if (e.type === 'wsp_done') {
       Object.assign(patch, { wspReport: e.report, wspWeights: e.weights, wspPatient: e.report.patient || [], explain: undefined })
       if ((e.report.patient || []).some((p: any) => p.after >= 0.5)) patch.lesionFlagged = true
+      if (s.wspEvents.length && e.t > 0.5 && !s.wspReport) {
+        const r = e.report
+        setTimeout(() => get().toast('Opus-edited model ready', `${r.weights_changed} weights changed · small-lesion recall ${Math.round(r.test_before.recall_small * 100)}% → ${Math.round(r.test_after.recall_small * 100)}%`), 200)
+      }
     }
     set(patch)
   },

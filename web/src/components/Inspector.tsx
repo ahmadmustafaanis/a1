@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import { askOrgans } from '../api'
+import { ListenButton } from '../speak'
 import { useStore } from '../store'
 import Compare from './Compare'
 import { AttributionBars, fetchExplain, openXray } from './Xray'
@@ -46,7 +47,7 @@ export default function Inspector() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 40, opacity: 0 }}
           transition={{ type: 'spring', damping: 26, stiffness: 260 }}
-          style={{ position: 'absolute', right: 16, top: 76, width: 360, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100% - 172px)', display: 'flex', flexDirection: 'column', zIndex: 6, overflow: 'hidden' }}
+          style={{ position: 'absolute', right: 16, top: 72, width: 360, maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100% - 172px)', display: 'flex', flexDirection: 'column', zIndex: 6, overflow: 'hidden' }}
         >
           <div style={{ padding: '18px 18px 14px', borderBottom: '1px solid var(--line)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -94,6 +95,7 @@ export default function Inspector() {
                 <div key={o.id} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {list.length > 1 && <div style={{ fontWeight: 600, fontSize: 13 }}>{o.label}</div>}
                   {o.blurb && <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: 'var(--ink-2)' }}>{o.blurb}</p>}
+                  {(o.blurb || f) && <div><ListenButton id={`organ-${o.id}`} text={[o.label + '.', o.blurb, f ? f.title + '. ' + f.detail : ''].filter(Boolean).join(' ')} /></div>}
                   {f && (
                     <div style={{ padding: 12, borderRadius: 14, background: 'var(--danger-soft)', fontSize: 13, lineHeight: 1.5 }}>
                       <div style={{ fontWeight: 600, color: '#b3261e' }}>{f.title}</div>
