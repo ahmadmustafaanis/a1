@@ -2,6 +2,18 @@
 
 Upload a CT scan and **Opus 5.5 runs the whole pipeline**. It segments the scan into every organ, bone and vessel, checks its own work visually, builds a separate 3D object for each structure, screens the liver, and explains everything in plain language. It also does **weight-space programming**: it reads a small diagnosis model's weights and edits them directly to fix a known failure, with no gradients and no training run.
 
+![Lumen: a CT scan rebuilt as separate 3D structures while Opus's process streams on the left](docs/images/hero.jpg)
+
+🎬 **Demo film (78 s):** [videos/lumen-launch/renders/lumen-hackathon.mp4](videos/lumen-launch/renders/lumen-hackathon.mp4)
+
+| Pull your anatomy apart | Opus flags what the model missed |
+|---|---|
+| ![Exploded view of organs, vessels and bones](docs/images/explode.jpg) | ![An 8 mm liver finding in red inside the see-through liver](docs/images/finding.jpg) |
+| **Opus edits the model's weights** | **Model X-ray: why it decided** |
+| ![Weight-space session: heatmap of edited weights and original vs Opus-edited comparison](docs/images/wsp.jpg) | ![Circuit view of the network's signal flow with units Opus named](docs/images/xray.jpg) |
+
+![The generated report with 3D views and organ-by-organ notes](docs/images/report.jpg)
+
 ## Run it
 
 You need two terminals.
